@@ -346,6 +346,542 @@ function Nonx:CreateTab(name, icon)
         self:SelectTab(tab)
     end
     
+    -- Create section method for this tab
+    function tab:CreateSection(name)
+        local section = {}
+        section.Name = name
+        section.Visible = false
+        
+        -- Section button
+        section.Button = createInstance("TextButton", {
+            Name = name .. "SectionButton",
+            Parent = self.SectionContainer,
+            Size = UDim2.new(0, 100, 1, 0),
+            BackgroundColor3 = Color3.fromRGB(40, 40, 40),
+            Text = name,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Font = Enum.Font.Gotham,
+            AutoButtonColor = false
+        })
+        
+        -- Round corners
+        local corner = createInstance("UICorner", {
+            Parent = section.Button,
+            CornerRadius = UDim.new(0, 6)
+        })
+        
+        -- Section content frame
+        section.Frame = createInstance("Frame", {
+            Name = name .. "SectionFrame",
+            Parent = self.ContentFrame,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Visible = false
+        })
+        
+        -- Left and right columns for section
+        section.LeftColumn = createInstance("ScrollingFrame", {
+            Name = "LeftColumn",
+            Parent = section.Frame,
+            Size = UDim2.new(0.5, -5, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            ScrollBarThickness = 3,
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            AutomaticCanvasSize = Enum.AutomaticSize.Y
+        })
+        
+        section.RightColumn = createInstance("ScrollingFrame", {
+            Name = "RightColumn",
+            Parent = section.Frame,
+            Size = UDim2.new(0.5, -5, 1, 0),
+            Position = UDim2.new(0.5, 5, 0, 0),
+            BackgroundTransparency = 1,
+            ScrollBarThickness = 3,
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            AutomaticCanvasSize = Enum.AutomaticSize.Y
+        })
+        
+        -- Layout for section columns
+        local leftLayout = createInstance("UIListLayout", {
+            Parent = section.LeftColumn,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 10)
+        })
+        
+        local rightLayout = createInstance("UIListLayout", {
+            Parent = section.RightColumn,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 10)
+        })
+        
+        leftLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            section.LeftColumn.CanvasSize = UDim2.new(0, 0, 0, leftLayout.AbsoluteContentSize.Y)
+        end)
+        
+        rightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            section.RightColumn.CanvasSize = UDim2.new(0, 0, 0, rightLayout.AbsoluteContentSize.Y)
+        end)
+        
+        -- Button click event
+        section.Button.MouseButton1Click:Connect(function()
+            self:SelectSection(section)
+        end)
+        
+        table.insert(self.Sections, section)
+        
+        -- Select first section by default
+        if #self.Sections == 1 then
+            self:SelectSection(section)
+        end
+        
+        -- Add element methods to the section
+        function section:AddButton(options)
+            options = options or {}
+            local name = options.Name or "Button"
+            local callback = options.Callback or function() end
+            local column = options.Column or "Left"
+            
+            local buttonFrame = createInstance("Frame", {
+                Name = name .. "ButtonFrame",
+                Parent = column == "Left" and self.LeftColumn or self.RightColumn,
+                Size = UDim2.new(1, 0, 0, 30),
+                BackgroundTransparency = 1,
+                LayoutOrder = options.LayoutOrder or 1
+            })
+            
+            local button = createInstance("TextButton", {
+                Name = name .. "Button",
+                Parent = buttonFrame,
+                Size = UDim2.new(1, 0, 1, 0),
+                BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+                Text = name,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                Font = Enum.Font.Gotham,
+                AutoButtonColor = false
+            })
+            
+            local corner = createInstance("UICorner", {
+                Parent = button,
+                CornerRadius = UDim.new(0, 4)
+            })
+            
+            button.MouseEnter:Connect(function()
+                tween(button, {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}, 0.2)
+            end)
+            
+            button.MouseLeave:Connect(function()
+                tween(button, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.2)
+            end)
+            
+            button.MouseButton1Click:Connect(function()
+                callback()
+                tween(button, {BackgroundColor3 = Color3.fromRGB(70, 70, 70)}, 0.1)
+                wait(0.1)
+                tween(button, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.1)
+            end)
+            
+            return button
+        end
+        
+        function section:AddToggle(options)
+            options = options or {}
+            local name = options.Name or "Toggle"
+            local default = options.Default or false
+            local callback = options.Callback or function() end
+            local column = options.Column or "Left"
+            
+            local toggleFrame = createInstance("Frame", {
+                Name = name .. "ToggleFrame",
+                Parent = column == "Left" and self.LeftColumn or self.RightColumn,
+                Size = UDim2.new(1, 0, 0, 30),
+                BackgroundTransparency = 1,
+                LayoutOrder = options.LayoutOrder or 1
+            })
+            
+            local label = createInstance("TextLabel", {
+                Name = name .. "Label",
+                Parent = toggleFrame,
+                Size = UDim2.new(0.7, 0, 1, 0),
+                BackgroundTransparency = 1,
+                Text = name,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Font = Enum.Font.Gotham
+            })
+            
+            local toggle = createInstance("TextButton", {
+                Name = name .. "Toggle",
+                Parent = toggleFrame,
+                Size = UDim2.new(0.3, 0, 1, 0),
+                Position = UDim2.new(0.7, 0, 0, 0),
+                BackgroundColor3 = default and Color3.fromRGB(0, 170, 127) or Color3.fromRGB(50, 50, 50),
+                Text = "",
+                AutoButtonColor = false
+            })
+            
+            local corner = createInstance("UICorner", {
+                Parent = toggle,
+                CornerRadius = UDim.new(0, 10)
+            })
+            
+            local state = default
+            
+            toggle.MouseButton1Click:Connect(function()
+                state = not state
+                if state then
+                    tween(toggle, {BackgroundColor3 = Color3.fromRGB(0, 170, 127)}, 0.2)
+                else
+                    tween(toggle, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.2)
+                end
+                callback(state)
+            end)
+            
+            return toggle
+        end
+        
+        function section:AddSlider(options)
+            options = options or {}
+            local name = options.Name or "Slider"
+            local min = options.Min or 0
+            local max = options.Max or 100
+            local default = options.Default or min
+            local callback = options.Callback or function() end
+            local column = options.Column or "Left"
+            local precise = options.Precise or false
+            
+            local sliderFrame = createInstance("Frame", {
+                Name = name .. "SliderFrame",
+                Parent = column == "Left" and self.LeftColumn or self.RightColumn,
+                Size = UDim2.new(1, 0, 0, 50),
+                BackgroundTransparency = 1,
+                LayoutOrder = options.LayoutOrder or 1
+            })
+            
+            local label = createInstance("TextLabel", {
+                Name = name .. "Label",
+                Parent = sliderFrame,
+                Size = UDim2.new(1, 0, 0, 20),
+                BackgroundTransparency = 1,
+                Text = name .. ": " .. default,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Font = Enum.Font.Gotham
+            })
+            
+            local track = createInstance("Frame", {
+                Name = name .. "Track",
+                Parent = sliderFrame,
+                Size = UDim2.new(1, 0, 0, 5),
+                Position = UDim2.new(0, 0, 0, 30),
+                BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            })
+            
+            local trackCorner = createInstance("UICorner", {
+                Parent = track,
+                CornerRadius = UDim.new(1, 0)
+            })
+            
+            local fill = createInstance("Frame", {
+                Name = name .. "Fill",
+                Parent = track,
+                Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
+                BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+            })
+            
+            local fillCorner = createInstance("UICorner", {
+                Parent = fill,
+                CornerRadius = UDim.new(1, 0)
+            })
+            
+            local handle = createInstance("TextButton", {
+                Name = name .. "Handle",
+                Parent = track,
+                Size = UDim2.new(0, 15, 0, 15),
+                Position = UDim2.new((default - min) / (max - min), -7, 0.5, -7),
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                Text = "",
+                AutoButtonColor = false,
+                ZIndex = 2
+            })
+            
+            local handleCorner = createInstance("UICorner", {
+                Parent = handle,
+                CornerRadius = UDim.new(1, 0)
+            })
+            
+            local dragging = false
+            local value = default
+            
+            local function updateValue(input)
+                local relativeX = (input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X
+                relativeX = math.clamp(relativeX, 0, 1)
+                
+                if precise then
+                    value = math.floor(min + relativeX * (max - min))
+                else
+                    value = min + relativeX * (max - min)
+                end
+                
+                fill.Size = UDim2.new(relativeX, 0, 1, 0)
+                handle.Position = UDim2.new(relativeX, -7, 0.5, -7)
+                label.Text = name .. ": " .. value
+                
+                callback(value)
+            end
+            
+            handle.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = true
+                end
+            end)
+            
+            handle.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = false
+                end
+            end)
+            
+            track.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    updateValue(input)
+                end
+            end)
+            
+            game:GetService("UserInputService").InputChanged:Connect(function(input)
+                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    updateValue(input)
+                end
+            end)
+            
+            return {
+                SetValue = function(newValue)
+                    value = math.clamp(newValue, min, max)
+                    local relativeX = (value - min) / (max - min)
+                    fill.Size = UDim2.new(relativeX, 0, 1, 0)
+                    handle.Position = UDim2.new(relativeX, -7, 0.5, -7)
+                    label.Text = name .. ": " .. value
+                    callback(value)
+                end,
+                GetValue = function()
+                    return value
+                end
+            }
+        end
+        
+        function section:AddDropdown(options)
+            options = options or {}
+            local name = options.Name or "Dropdown"
+            local items = options.Items or {}
+            local default = options.Default or items[1] or ""
+            local callback = options.Callback or function() end
+            local column = options.Column or "Left"
+            
+            local dropdownFrame = createInstance("Frame", {
+                Name = name .. "DropdownFrame",
+                Parent = column == "Left" and self.LeftColumn or self.RightColumn,
+                Size = UDim2.new(1, 0, 0, 30),
+                BackgroundTransparency = 1,
+                LayoutOrder = options.LayoutOrder or 1
+            })
+            
+            local label = createInstance("TextLabel", {
+                Name = name .. "Label",
+                Parent = dropdownFrame,
+                Size = UDim2.new(1, 0, 0, 15),
+                BackgroundTransparency = 1,
+                Text = name,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Font = Enum.Font.Gotham
+            })
+            
+            local dropdown = createInstance("TextButton", {
+                Name = name .. "Dropdown",
+                Parent = dropdownFrame,
+                Size = UDim2.new(1, 0, 0, 30),
+                Position = UDim2.new(0, 0, 0, 15),
+                BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+                Text = default,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                Font = Enum.Font.Gotham,
+                AutoButtonColor = false
+            })
+            
+            local corner = createInstance("UICorner", {
+                Parent = dropdown,
+                CornerRadius = UDim.new(0, 4)
+            })
+            
+            local dropdownList = createInstance("ScrollingFrame", {
+                Name = name .. "DropdownList",
+                Parent = dropdownFrame,
+                Size = UDim2.new(1, 0, 0, 0),
+                Position = UDim2.new(0, 0, 0, 45),
+                BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+                ScrollBarThickness = 3,
+                CanvasSize = UDim2.new(0, 0, 0, 0),
+                Visible = false,
+                ClipsDescendants = true
+            })
+            
+            local listLayout = createInstance("UIListLayout", {
+                Parent = dropdownList,
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+            
+            listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                dropdownList.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+            end)
+            
+            local open = false
+            local selected = default
+            
+            local function toggleDropdown()
+                open = not open
+                if open then
+                    dropdownList.Visible = true
+                    tween(dropdownList, {Size = UDim2.new(1, 0, 0, math.min(100, #items * 30))}, 0.2)
+                else
+                    tween(dropdownList, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
+                    wait(0.2)
+                    dropdownList.Visible = false
+                end
+            end
+            
+            dropdown.MouseButton1Click:Connect(toggleDropdown)
+            
+            for i, item in ipairs(items) do
+                local option = createInstance("TextButton", {
+                    Name = item .. "Option",
+                    Parent = dropdownList,
+                    Size = UDim2.new(1, 0, 0, 30),
+                    BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+                    Text = item,
+                    TextColor3 = Color3.fromRGB(255, 255, 255),
+                    Font = Enum.Font.Gotham,
+                    AutoButtonColor = false,
+                    LayoutOrder = i
+                })
+                
+                option.MouseButton1Click:Connect(function()
+                    selected = item
+                    dropdown.Text = selected
+                    callback(selected)
+                    toggleDropdown()
+                end)
+                
+                option.MouseEnter:Connect(function()
+                    tween(option, {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}, 0.2)
+                end)
+                
+                option.MouseLeave:Connect(function()
+                    tween(option, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.2)
+                end)
+            end
+            
+            return {
+                SetSelected = function(item)
+                    if table.find(items, item) then
+                        selected = item
+                        dropdown.Text = selected
+                        callback(selected)
+                    end
+                end,
+                GetSelected = function()
+                    return selected
+                end
+            }
+        end
+        
+        function section:AddTextBox(options)
+            options = options or {}
+            local name = options.Name or "TextBox"
+            local placeholder = options.Placeholder or "Enter text..."
+            local default = options.Default or ""
+            local callback = options.Callback or function() end
+            local column = options.Column or "Left"
+            
+            local textboxFrame = createInstance("Frame", {
+                Name = name .. "TextboxFrame",
+                Parent = column == "Left" and self.LeftColumn or self.RightColumn,
+                Size = UDim2.new(1, 0, 0, 50),
+                BackgroundTransparency = 1,
+                LayoutOrder = options.LayoutOrder or 1
+            })
+            
+            local label = createInstance("TextLabel", {
+                Name = name .. "Label",
+                Parent = textboxFrame,
+                Size = UDim2.new(1, 0, 0, 15),
+                BackgroundTransparency = 1,
+                Text = name,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Font = Enum.Font.Gotham
+            })
+            
+            local textbox = createInstance("TextBox", {
+                Name = name .. "Textbox",
+                Parent = textboxFrame,
+                Size = UDim2.new(1, 0, 0, 30),
+                Position = UDim2.new(0, 0, 0, 15),
+                BackgroundColor3 = Color3.fromRGB(50, 50, 50),
+                Text = default,
+                PlaceholderText = placeholder,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                Font = Enum.Font.Gotham,
+                ClearTextOnFocus = false
+            })
+            
+            local corner = createInstance("UICorner", {
+                Parent = textbox,
+                CornerRadius = UDim.new(0, 4)
+            })
+            
+            textbox.FocusLost:Connect(function(enterPressed)
+                if enterPressed then
+                    callback(textbox.Text)
+                end
+            end)
+            
+            return textbox
+        end
+        
+        function section:AddLabel(options)
+            options = options or {}
+            local text = options.Text or "Label"
+            local column = options.Column or "Left"
+            
+            local label = createInstance("TextLabel", {
+                Name = text .. "Label",
+                Parent = column == "Left" and self.LeftColumn or self.RightColumn,
+                Size = UDim2.new(1, 0, 0, 20),
+                BackgroundTransparency = 1,
+                Text = text,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Font = Enum.Font.Gotham,
+                LayoutOrder = options.LayoutOrder or 1
+            })
+            
+            return label
+        end
+        
+        return section
+    end
+    
+    -- Select section method for this tab
+    function tab:SelectSection(section)
+        for _, s in ipairs(self.Sections) do
+            s.Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+            s.Frame.Visible = false
+        end
+        
+        section.Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        section.Frame.Visible = true
+    end
+    
     return tab
 end
 
@@ -359,542 +895,6 @@ function Nonx:SelectTab(tab)
     self.CurrentTab = tab
     tab.Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     tab.Frame.Visible = true
-end
-
--- Create a section for a tab
-function tab:CreateSection(name)
-    local section = {}
-    section.Name = name
-    section.Visible = false
-    
-    -- Section button
-    section.Button = createInstance("TextButton", {
-        Name = name .. "SectionButton",
-        Parent = self.SectionContainer,
-        Size = UDim2.new(0, 100, 1, 0),
-        BackgroundColor3 = Color3.fromRGB(40, 40, 40),
-        Text = name,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        Font = Enum.Font.Gotham,
-        AutoButtonColor = false
-    })
-    
-    -- Round corners
-    local corner = createInstance("UICorner", {
-        Parent = section.Button,
-        CornerRadius = UDim.new(0, 6)
-    })
-    
-    -- Section content frame
-    section.Frame = createInstance("Frame", {
-        Name = name .. "SectionFrame",
-        Parent = self.ContentFrame,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Visible = false
-    })
-    
-    -- Left and right columns for section
-    section.LeftColumn = createInstance("ScrollingFrame", {
-        Name = "LeftColumn",
-        Parent = section.Frame,
-        Size = UDim2.new(0.5, -5, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1,
-        ScrollBarThickness = 3,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y
-    })
-    
-    section.RightColumn = createInstance("ScrollingFrame", {
-        Name = "RightColumn",
-        Parent = section.Frame,
-        Size = UDim2.new(0.5, -5, 1, 0),
-        Position = UDim2.new(0.5, 5, 0, 0),
-        BackgroundTransparency = 1,
-        ScrollBarThickness = 3,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y
-    })
-    
-    -- Layout for section columns
-    local leftLayout = createInstance("UIListLayout", {
-        Parent = section.LeftColumn,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 10)
-    })
-    
-    local rightLayout = createInstance("UIListLayout", {
-        Parent = section.RightColumn,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Padding = UDim.new(0, 10)
-    })
-    
-    leftLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        section.LeftColumn.CanvasSize = UDim2.new(0, 0, 0, leftLayout.AbsoluteContentSize.Y)
-    end)
-    
-    rightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        section.RightColumn.CanvasSize = UDim2.new(0, 0, 0, rightLayout.AbsoluteContentSize.Y)
-    end)
-    
-    -- Button click event
-    section.Button.MouseButton1Click:Connect(function()
-        self:SelectSection(section)
-    end)
-    
-    table.insert(self.Sections, section)
-    
-    -- Select first section by default
-    if #self.Sections == 1 then
-        self:SelectSection(section)
-    end
-    
-    return section
-end
-
--- Select a section
-function tab:SelectSection(section)
-    for _, s in ipairs(self.Sections) do
-        s.Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        s.Frame.Visible = false
-    end
-    
-    section.Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    section.Frame.Visible = true
-end
-
--- Add elements to sections
-function section:AddButton(options)
-    options = options or {}
-    local name = options.Name or "Button"
-    local callback = options.Callback or function() end
-    local column = options.Column or "Left"
-    
-    local buttonFrame = createInstance("Frame", {
-        Name = name .. "ButtonFrame",
-        Parent = column == "Left" and self.LeftColumn or self.RightColumn,
-        Size = UDim2.new(1, 0, 0, 30),
-        BackgroundTransparency = 1,
-        LayoutOrder = options.LayoutOrder or 1
-    })
-    
-    local button = createInstance("TextButton", {
-        Name = name .. "Button",
-        Parent = buttonFrame,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-        Text = name,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        Font = Enum.Font.Gotham,
-        AutoButtonColor = false
-    })
-    
-    local corner = createInstance("UICorner", {
-        Parent = button,
-        CornerRadius = UDim.new(0, 4)
-    })
-    
-    button.MouseEnter:Connect(function()
-        tween(button, {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}, 0.2)
-    end)
-    
-    button.MouseLeave:Connect(function()
-        tween(button, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.2)
-    end)
-    
-    button.MouseButton1Click:Connect(function()
-        callback()
-        tween(button, {BackgroundColor3 = Color3.fromRGB(70, 70, 70)}, 0.1)
-        wait(0.1)
-        tween(button, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.1)
-    end)
-    
-    return button
-end
-
-function section:AddToggle(options)
-    options = options or {}
-    local name = options.Name or "Toggle"
-    local default = options.Default or false
-    local callback = options.Callback or function() end
-    local column = options.Column or "Left"
-    
-    local toggleFrame = createInstance("Frame", {
-        Name = name .. "ToggleFrame",
-        Parent = column == "Left" and self.LeftColumn or self.RightColumn,
-        Size = UDim2.new(1, 0, 0, 30),
-        BackgroundTransparency = 1,
-        LayoutOrder = options.LayoutOrder or 1
-    })
-    
-    local label = createInstance("TextLabel", {
-        Name = name .. "Label",
-        Parent = toggleFrame,
-        Size = UDim2.new(0.7, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = name,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.Gotham
-    })
-    
-    local toggle = createInstance("TextButton", {
-        Name = name .. "Toggle",
-        Parent = toggleFrame,
-        Size = UDim2.new(0.3, 0, 1, 0),
-        Position = UDim2.new(0.7, 0, 0, 0),
-        BackgroundColor3 = default and Color3.fromRGB(0, 170, 127) or Color3.fromRGB(50, 50, 50),
-        Text = "",
-        AutoButtonColor = false
-    })
-    
-    local corner = createInstance("UICorner", {
-        Parent = toggle,
-        CornerRadius = UDim.new(0, 10)
-    })
-    
-    local state = default
-    
-    toggle.MouseButton1Click:Connect(function()
-        state = not state
-        if state then
-            tween(toggle, {BackgroundColor3 = Color3.fromRGB(0, 170, 127)}, 0.2)
-        else
-            tween(toggle, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.2)
-        end
-        callback(state)
-    end)
-    
-    return toggle
-end
-
-function section:AddSlider(options)
-    options = options or {}
-    local name = options.Name or "Slider"
-    local min = options.Min or 0
-    local max = options.Max or 100
-    local default = options.Default or min
-    local callback = options.Callback or function() end
-    local column = options.Column or "Left"
-    local precise = options.Precise or false
-    
-    local sliderFrame = createInstance("Frame", {
-        Name = name .. "SliderFrame",
-        Parent = column == "Left" and self.LeftColumn or self.RightColumn,
-        Size = UDim2.new(1, 0, 0, 50),
-        BackgroundTransparency = 1,
-        LayoutOrder = options.LayoutOrder or 1
-    })
-    
-    local label = createInstance("TextLabel", {
-        Name = name .. "Label",
-        Parent = sliderFrame,
-        Size = UDim2.new(1, 0, 0, 20),
-        BackgroundTransparency = 1,
-        Text = name .. ": " .. default,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.Gotham
-    })
-    
-    local track = createInstance("Frame", {
-        Name = name .. "Track",
-        Parent = sliderFrame,
-        Size = UDim2.new(1, 0, 0, 5),
-        Position = UDim2.new(0, 0, 0, 30),
-        BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    })
-    
-    local trackCorner = createInstance("UICorner", {
-        Parent = track,
-        CornerRadius = UDim.new(1, 0)
-    })
-    
-    local fill = createInstance("Frame", {
-        Name = name .. "Fill",
-        Parent = track,
-        Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
-        BackgroundColor3 = Color3.fromRGB(0, 170, 127)
-    })
-    
-    local fillCorner = createInstance("UICorner", {
-        Parent = fill,
-        CornerRadius = UDim.new(1, 0)
-    })
-    
-    local handle = createInstance("TextButton", {
-        Name = name .. "Handle",
-        Parent = track,
-        Size = UDim2.new(0, 15, 0, 15),
-        Position = UDim2.new((default - min) / (max - min), -7, 0.5, -7),
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 2
-    })
-    
-    local handleCorner = createInstance("UICorner", {
-        Parent = handle,
-        CornerRadius = UDim.new(1, 0)
-    })
-    
-    local dragging = false
-    local value = default
-    
-    local function updateValue(input)
-        local relativeX = (input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X
-        relativeX = math.clamp(relativeX, 0, 1)
-        
-        if precise then
-            value = math.floor(min + relativeX * (max - min))
-        else
-            value = min + relativeX * (max - min)
-        end
-        
-        fill.Size = UDim2.new(relativeX, 0, 1, 0)
-        handle.Position = UDim2.new(relativeX, -7, 0.5, -7)
-        label.Text = name .. ": " .. value
-        
-        callback(value)
-    end
-    
-    handle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-        end
-    end)
-    
-    handle.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    track.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            updateValue(input)
-        end
-    end)
-    
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            updateValue(input)
-        end
-    end)
-    
-    return {
-        SetValue = function(newValue)
-            value = math.clamp(newValue, min, max)
-            local relativeX = (value - min) / (max - min)
-            fill.Size = UDim2.new(relativeX, 0, 1, 0)
-            handle.Position = UDim2.new(relativeX, -7, 0.5, -7)
-            label.Text = name .. ": " .. value
-            callback(value)
-        end,
-        GetValue = function()
-            return value
-        end
-    }
-end
-
-function section:AddDropdown(options)
-    options = options or {}
-    local name = options.Name or "Dropdown"
-    local items = options.Items or {}
-    local default = options.Default or items[1] or ""
-    local callback = options.Callback or function() end
-    local column = options.Column or "Left"
-    
-    local dropdownFrame = createInstance("Frame", {
-        Name = name .. "DropdownFrame",
-        Parent = column == "Left" and self.LeftColumn or self.RightColumn,
-        Size = UDim2.new(1, 0, 0, 30),
-        BackgroundTransparency = 1,
-        LayoutOrder = options.LayoutOrder or 1
-    })
-    
-    local label = createInstance("TextLabel", {
-        Name = name .. "Label",
-        Parent = dropdownFrame,
-        Size = UDim2.new(1, 0, 0, 15),
-        BackgroundTransparency = 1,
-        Text = name,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.Gotham
-    })
-    
-    local dropdown = createInstance("TextButton", {
-        Name = name .. "Dropdown",
-        Parent = dropdownFrame,
-        Size = UDim2.new(1, 0, 0, 30),
-        Position = UDim2.new(0, 0, 0, 15),
-        BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-        Text = default,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        Font = Enum.Font.Gotham,
-        AutoButtonColor = false
-    })
-    
-    local corner = createInstance("UICorner", {
-        Parent = dropdown,
-        CornerRadius = UDim.new(0, 4)
-    })
-    
-    local dropdownList = createInstance("ScrollingFrame", {
-        Name = name .. "DropdownList",
-        Parent = dropdownFrame,
-        Size = UDim2.new(1, 0, 0, 0),
-        Position = UDim2.new(0, 0, 0, 45),
-        BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-        ScrollBarThickness = 3,
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        Visible = false,
-        ClipsDescendants = true
-    })
-    
-    local listLayout = createInstance("UIListLayout", {
-        Parent = dropdownList,
-        SortOrder = Enum.SortOrder.LayoutOrder
-    })
-    
-    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        dropdownList.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
-    end)
-    
-    local open = false
-    local selected = default
-    
-    local function toggleDropdown()
-        open = not open
-        if open then
-            dropdownList.Visible = true
-            tween(dropdownList, {Size = UDim2.new(1, 0, 0, math.min(100, #items * 30))}, 0.2)
-        else
-            tween(dropdownList, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
-            wait(0.2)
-            dropdownList.Visible = false
-        end
-    end
-    
-    dropdown.MouseButton1Click:Connect(toggleDropdown)
-    
-    for i, item in ipairs(items) do
-        local option = createInstance("TextButton", {
-            Name = item .. "Option",
-            Parent = dropdownList,
-            Size = UDim2.new(1, 0, 0, 30),
-            BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-            Text = item,
-            TextColor3 = Color3.fromRGB(255, 255, 255),
-            Font = Enum.Font.Gotham,
-            AutoButtonColor = false,
-            LayoutOrder = i
-        })
-        
-        option.MouseButton1Click:Connect(function()
-            selected = item
-            dropdown.Text = selected
-            callback(selected)
-            toggleDropdown()
-        end)
-        
-        option.MouseEnter:Connect(function()
-            tween(option, {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}, 0.2)
-        end)
-        
-        option.MouseLeave:Connect(function()
-            tween(option, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}, 0.2)
-        end)
-    end
-    
-    return {
-        SetSelected = function(item)
-            if table.find(items, item) then
-                selected = item
-                dropdown.Text = selected
-                callback(selected)
-            end
-        end,
-        GetSelected = function()
-            return selected
-        end
-    }
-end
-
-function section:AddTextBox(options)
-    options = options or {}
-    local name = options.Name or "TextBox"
-    local placeholder = options.Placeholder or "Enter text..."
-    local default = options.Default or ""
-    local callback = options.Callback or function() end
-    local column = options.Column or "Left"
-    
-    local textboxFrame = createInstance("Frame", {
-        Name = name .. "TextboxFrame",
-        Parent = column == "Left" and self.LeftColumn or self.RightColumn,
-        Size = UDim2.new(1, 0, 0, 50),
-        BackgroundTransparency = 1,
-        LayoutOrder = options.LayoutOrder or 1
-    })
-    
-    local label = createInstance("TextLabel", {
-        Name = name .. "Label",
-        Parent = textboxFrame,
-        Size = UDim2.new(1, 0, 0, 15),
-        BackgroundTransparency = 1,
-        Text = name,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.Gotham
-    })
-    
-    local textbox = createInstance("TextBox", {
-        Name = name .. "Textbox",
-        Parent = textboxFrame,
-        Size = UDim2.new(1, 0, 0, 30),
-        Position = UDim2.new(0, 0, 0, 15),
-        BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-        Text = default,
-        PlaceholderText = placeholder,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        Font = Enum.Font.Gotham,
-        ClearTextOnFocus = false
-    })
-    
-    local corner = createInstance("UICorner", {
-        Parent = textbox,
-        CornerRadius = UDim.new(0, 4)
-    })
-    
-    textbox.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            callback(textbox.Text)
-        end
-    end)
-    
-    return textbox
-end
-
-function section:AddLabel(options)
-    options = options or {}
-    local text = options.Text or "Label"
-    local column = options.Column or "Left"
-    
-    local label = createInstance("TextLabel", {
-        Name = text .. "Label",
-        Parent = column == "Left" and self.LeftColumn or self.RightColumn,
-        Size = UDim2.new(1, 0, 0, 20),
-        BackgroundTransparency = 1,
-        Text = text,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Font = Enum.Font.Gotham,
-        LayoutOrder = options.LayoutOrder or 1
-    })
-    
-    return label
 end
 
 return Nonx
